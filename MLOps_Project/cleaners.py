@@ -10,8 +10,8 @@ from loguru import logger
 from sklearn.preprocessing import MinMaxScaler
 import joblib
 
-from itu_sdse_project.config import RAW_DATA_DIR, PROCESSED_DATA_DIR
-from itu_sdse_project.modeling.loaders import load_raw_data, pull_dvc_data
+from config import RAW_DATA_DIR, PROCESSED_DATA_DIR
+from loaders import load_raw_data, pull_dvc_data
 
 
 warnings.filterwarnings("ignore")

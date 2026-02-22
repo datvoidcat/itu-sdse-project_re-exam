@@ -15,7 +15,7 @@ from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, accuracy_score, f1_score
 
-from itu_sdse_project.config import MODELS_DIR
+from config import MODELS_DIR
 
 try:
     import mlflow
@@ -29,9 +29,9 @@ from scipy.stats import uniform, randint
 from mlflow.tracking import MlflowClient
 import time
 
-from itu_sdse_project.config import RAW_DATA_DIR, PROCESSED_DATA_DIR
-from itu_sdse_project.modeling.loaders import load_raw_data, pull_dvc_data
-from itu_sdse_project.modeling.cleaners import clean_raw_data
+from config import RAW_DATA_DIR, PROCESSED_DATA_DIR
+from loaders import load_raw_data, pull_dvc_data
+from cleaners import clean_raw_data
 
 
 def train():

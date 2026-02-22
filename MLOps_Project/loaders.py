@@ -21,3 +21,6 @@ def load_raw_data(filepath: Path) -> pd.DataFrame:
     data = pd.read_csv(filepath)
     logger.info(f"Loaded {len(data)} rows")
     return data
+
+if __name__ == "__main__":
+    pull_dvc_data()
