@@ -1,0 +1,23 @@
+artifact_path: file:///C:/Users/asket/Desktop/Data Science/5. semester/Data Science
+  in Production/Re-Exam/itu-sdse-project_re-exam/mlruns/1/models/m-b246c91a36054dd79d264de6fe641aa1/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.11.7
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.7.2
+mlflow_version: 3.7.0
+model_id: m-b246c91a36054dd79d264de6fe641aa1
+model_size_bytes: 91085
+model_uuid: m-b246c91a36054dd79d264de6fe641aa1
+prompts: null
+run_id: 9410a6704ad04484873463d8493f5da5
+utc_time_created: '2026-02-22 13:32:44.405088'
