@@ -1,0 +1,7 @@
+mean_fit_time,std_fit_time,mean_score_time,std_score_time,param_solver,param_penalty,param_C,params,split0_test_score,split1_test_score,split2_test_score,mean_test_score,std_test_score,rank_test_score
+0.0029992262522379556,0.0008155613980095802,0.0,0.0,newton-cg,l1,1.0,"{'solver': 'newton-cg', 'penalty': 'l1', 'C': 1.0}",,,,,,2
+0.002330621083577474,0.0012446229663823159,0.0,0.0,sag,l1,1.0,"{'solver': 'sag', 'penalty': 'l1', 'C': 1.0}",,,,,,2
+0.008333524068196615,0.001699441012801203,0.0016660690307617188,0.0004713705145349331,saga,l1,0.1,"{'solver': 'saga', 'penalty': 'l1', 'C': 0.1}",0.8245192307692307,0.796875,0.8064903846153846,0.8092948717948718,0.011458613498457589,1
+0.000999768575032552,5.947204250930057e-07,0.0,0.0,newton-cg,l1,0.01,"{'solver': 'newton-cg', 'penalty': 'l1', 'C': 0.01}",,,,,,2
+0.0010000864664713542,1.1239159602905075e-07,0.0,0.0,newton-cg,none,1.0,"{'solver': 'newton-cg', 'penalty': 'none', 'C': 1.0}",,,,,,2
+0.0006666978200276693,0.00047142655959197545,0.0,0.0,lbfgs,none,1.0,"{'solver': 'lbfgs', 'penalty': 'none', 'C': 1.0}",,,,,,2

@@ -1,11 +1,11 @@
 """Main pipeline orchestrator for the ML workflow."""
-
+import os
+os.environ["MPLBACKEND"] = "Agg" # Prevents Tkinter from being used for plots
 from loguru import logger
 from pathlib import Path
 import joblib
 import json
 import datetime
-import os
 import shutil
 
 import pandas as pd
@@ -182,7 +182,7 @@ def train():
     try:
         if MLFLOW_AVAILABLE:
             try:
-                mlflow.sklearn.autolog(log_input_examples=True, log_models=False)
+                mlflow.sklearn.autolog(log_input_examples=False, log_models=False)
             except Exception:
                 logger.warning("Failed to enable mlflow.sklearn.autolog")
 
