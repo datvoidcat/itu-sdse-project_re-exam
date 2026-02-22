@@ -1,4 +1,4 @@
 [core]
-    remote = localremote
-['remote "localremote"']
-    url = C:\Users\asket\Desktop\Data Science\5. semester\Data Science in Production\Re-Exam\DVC_Storage_Remote
+    remote = github
+['remote "github"']
+    url = https://github.com/Jeppe-T-K/itu-sdse-project-data
