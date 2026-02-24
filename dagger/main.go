@@ -1,37 +1,86 @@
-// A generated module for Dagger functions
-//
-// This module has been generated via dagger init and serves as a reference to
-// basic module structure as you get started with Dagger.
-//
-// Two functions have been pre-created. You can modify, delete, or add to them,
-// as needed. They demonstrate usage of arguments and return types using simple
-// echo and grep commands. The functions can be called from the dagger CLI or
-// from one of the SDKs.
-//
-// The first line in this comment block is a short description line and the
-// rest is a long description with more detail on the module's purpose or usage,
-// if appropriate. All modules should have a short description.
-
 package main
 
 import (
 	"context"
-	"dagger/dagger/internal/dagger"
+	"fmt"
+	"log"
+	"os"
+
+	"dagger.io/dagger"
 )
 
-type Dagger struct{}
+const (
+	pythonImg = "python:3.11-slim"
+)
 
-// Returns a container that echoes whatever string argument is provided
-func (m *Dagger) ContainerEcho(stringArg string) *dagger.Container {
-	return dag.Container().From("alpine:latest").WithExec([]string{"echo", stringArg})
+func main() {
+	if len(os.Args) < 1 {
+		fmt.Println("Usage: go run main.go [train|test") // setup for predit and test as well
+		os.Exit(2)
+	}
+
+	cmd := os.Args[1]
+	ctx := context.Background()
+
+	// Connect to Dagger engine (uses Docker Desktop under the hood)
+	client, err := dagger.Connect(ctx, dagger.WithLogOutput(os.Stdout))
+	if err != nil {
+		log.Fatalf("failed to connect to dagger: %v", err)
+	}
+	defer client.Close()
+
+	// Repository root is one level up from /dagger
+	source := client.Host().Directory("..")
+
+	switch cmd {
+	case "test":
+		if err := runTests(ctx, client, source); err != nil {
+			log.Fatal(err)
+		}
+	case "train":
+		if err := runTrain(ctx, client, source); err != nil {
+			log.Fatal(err)
+		}
+	default:
+		fmt.Println("Unknown command:", cmd)
+		fmt.Println("Usage: go run main.go [test|train|predict]")
+		os.Exit(2)
+	}
 }
 
-// Returns lines that match a pattern in the files of the provided Directory
-func (m *Dagger) GrepDir(ctx context.Context, directoryArg *dagger.Directory, pattern string) (string, error) {
-	return dag.Container().
-		From("alpine:latest").
-		WithMountedDirectory("/mnt", directoryArg).
-		WithWorkdir("/mnt").
-		WithExec([]string{"grep", "-R", pattern, "."}).
-		Stdout(ctx)
+func basePythonContainer(client *dagger.Client, source *dagger.Directory) *dagger.Container {
+	c := client.Container().
+		From(pythonImg).
+		WithDirectory("/workspace", source).
+		WithWorkdir("/workspace").
+		WithExec([]string{"pip", "install", "--no-cache-dir", "-r", "requirements.txt"})
+
+	return c
+}
+
+func pullDataIfPossible(c *dagger.Container) *dagger.Container {
+	// We don’t want this to fail the entire pipeline if remote is flaky.
+	return c.WithExec([]string{"sh", "-c", "dvc pull || true"})
+}
+
+func runTrain(ctx context.Context, client *dagger.Client, source *dagger.Directory) error {
+	c := basePythonContainer(client, source)
+
+	// Pull data
+	c = c.WithExec([]string{"sh", "-c", "dvc pull || true"})
+
+	// Run pipeline from inside MLOps_Project so `import config` works
+	c = c.WithWorkdir("/workspace/MLOps_Project").
+		WithExec([]string{"python", "-m", "pipeline"})
+
+	_, err := c.Sync(ctx)
+	return err
+}
+
+func runTests(ctx context.Context, client *dagger.Client, source *dagger.Directory) error {
+	c := basePythonContainer(client, source)
+	c = pullDataIfPossible(c)
+
+	_, err := c.Sync(ctx)
+	return err
 }
