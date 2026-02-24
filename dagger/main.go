@@ -73,7 +73,9 @@ func runTrain(ctx context.Context, client *dagger.Client, source *dagger.Directo
 	c = c.WithWorkdir("/workspace/MLOps_Project").
 		WithExec([]string{"python", "-m", "pipeline"})
 
-	_, err := c.Sync(ctx)
+	// Export model from container -> host (repo root)
+	model := c.File("/workspace/models/model.pkl")
+	_, err := model.Export(ctx, "../models/model.pkl")
 	return err
 }
 
