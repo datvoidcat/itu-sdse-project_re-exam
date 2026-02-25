@@ -1,4 +1,4 @@
-data/raw/
+data/raw/raw_data.csv
 .vscode/
 mlruns/
 mlflow.db
