@@ -112,7 +112,6 @@ models/model.pkl
 
 From the project root:
 
-```bash
 ```text 
 cd dagger
 go run main.go train
