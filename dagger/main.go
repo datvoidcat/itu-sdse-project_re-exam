@@ -79,7 +79,15 @@ func runTest(ctx context.Context, client *dagger.Client, source *dagger.Director
 		From("python:3.11-slim").
 		WithDirectory("/workspace", source).
 		WithWorkdir("/workspace").
-		WithExec([]string{"python", "tests/model_inference.py"})
+		WithExec([]string{"pip", "install", "--no-cache-dir", "-r", "requirements.txt"})
+
+	// Debug: show what's present in the container
+	c = c.WithExec([]string{"sh", "-c", "ls -lah /workspace || true"})
+	c = c.WithExec([]string{"sh", "-c", "ls -lah /workspace/models || true"})
+	c = c.WithExec([]string{"sh", "-c", "ls -lah /workspace/data/processed/artifacts || true"})
+
+	// Run inference test (print full traceback, fail on error)
+	c = c.WithExec([]string{"sh", "-c", "set -euo pipefail; python -u tests/model_inference.py"})
 
 	_, err := c.Sync(ctx)
 	return err
