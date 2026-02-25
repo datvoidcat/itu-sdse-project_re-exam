@@ -1,78 +1,140 @@
-# ITU BDS MLOPS'25 - Project
+# Data Science in Production: MLOps and Software Engineering (Autumn 2025) – Exam Project
 
-## Task
+## Group Members
+- **Aske Neye** — @askeneye  
+- **Alex Soo** — @datvoidcat
 
-Based on the input provided (see below), fork the repository and restructure the code to adhere to the concepts and ideas you have seen throughout the course.  The diagram below provides a detailed overview of the structure that the solution is expected to follow.   
+---
 
-![Project architecture](./docs/project-architecture.png)
+## Project Overview
 
-For the exam submission, we expect you to submit a pdf containing:
-- the list of members of the group
-- the link to the github.com public repository hosting your solution
-  - following the above, there is *no need* to invite the teaching staff as collaborators
+This repository contains our solution to the *Data Science in Production: MLOps and Software Engineering* exam project.
 
-The repository linked in the submission should contain:
+The goal of the project is to restructure a monolithic Jupyter notebook into a production-ready MLOps pipeline that:
 
-- A README.md file that describes the project
-- GitHub automation workflow
-- Dagger workflow (in Go)
-- All history
+- Pulls raw data via DVC  
+- Cleans and processes features  
+- Trains multiple machine learning models  
+- Selects the best model  
+- Produces a validated model artifact  
+- Runs fully automated CI/CD via GitHub Actions  
+- Uses **Dagger (Go SDK)** for containerized pipeline orchestration  
 
+The pipeline identifies potential new customers based on user behavior data.
 
-## Inputs
+---
 
-You are given the following material:
-- Python monolith (see `notebooks` folder)
-- Raw input data (see `notebooks/artifacts` folder)
-- GitHub action to test model inference (see [`model-validator`](https://github.com/lasselundstenjensen/itu-sdse-project-model-validator) action)
+# Project Structure
+```text 
+itu-sdse-project_re-exam/
+├── .github/workflows/      # GitHub Actions CI pipeline
+├── dagger/                 # Dagger pipeline (Go SDK)
+│ └── main.go
+├── MLOps_Project/          # Python ML code
+│ ├── pipeline.py
+│ ├── loaders.py
+│ ├── cleaners.py
+│ └── config.py
+├── data/
+│ ├── raw/                  # Raw data (tracked via DVC)
+│ └── processed/artifacts/  # Training artifacts
+├── models/                 # Final exported model artifact (validator)
+├── tests/                  # Inference validation script
+├── requirements.txt
+└── README.md
+```
+---
 
-## Outputs
+# Machine Learning Models
 
-- Your GitHub repository (including all history)
-  - A README.md file that describes the project
-  - GitHub automation workflow
-  - Dagger workflow (in Go)
-- Model artifact produced by GitHub workflow and named 'model'
+The training pipeline evaluates multiple candidate models:
 
-> **NOTE:**
-> The Dagger workflow can be run locally or inside the GitHub workflow—both are viable options during development.
->
-> The Dagger workflow can run locally and can also be made to produce outputs locally during development. But when wrapping the Dagger workflow in a GitHub workflow, the output is instead stored inside the GitHub runner (i.e. a virtual machine).
->
-> Use the publicly available [`actions/upload-artifact`](https://github.com/actions/upload-artifact) to store the model artifact in the GitHub worklow pipeline.
->
-> This model artifact can then be picked up by the [action provided](https://github.com/lasselundstenjensen/itu-sdse-project-model-validator), which will run some inference tests to ensure that the correct model was trained.
-
-
-## How will we assess
-
-Below, we provide information on how we will assess the submission clustered around several aspects.  The list relates to groups of size 3; if your group is of size 4, you are expected also to work on the optional items, i.e., to use pull requests and to provide tests.
-
-#### Versioning
-
-- Use of Git (semantic commit messages, branches, branch longevity, commit frequency/size)
-- Management of data
-- Use of pull requests (OPTIONAL)
-
-#### Programming
-
-- Decomposition of Python notebook
-- Adherance to standard data science MLOps project structure
-- Presence of tests (OPTIONAL)
-
-#### Workflow automation
-
-- Presence of a workflow that trains the model
-- Presence of a workflow that tests the model
-- Structure of Dagger workflow
-- Orchestration of Dagger workflow through GitHub workflow
-
-#### Documentation (README.md)
-
-- Description of project structure
-- How to run the code and generate the model artifact
+- **XGBoost**
+- **Logistic Regression**
 
 
-## Questions
+## Important Design Decision
 
-If you have any questions about the information shared here, please feel free to post them on Learnit. Answers to private emails on this topic will also be shared on Learnit, along with the original email content, so that everyone has access to the same information.
+- The **best model (often XGBoost)** is saved in:
+```text 
+data/processed/artifacts/lead_model_xgboost.json
+```
+
+- A **validator-compatible model (Logistic Regression)** is always exported to:
+```text 
+models/model.pkl
+```
+
+This separation ensures:
+
+- We retain the best-performing model.
+- The GitHub validator (which does not install xgboost) can successfully load the artifact.
+- The CI pipeline passes under constrained dependency environments.
+
+
+
+## Github Actions Workflow
+
+```text 
+.github/workflows/action.yml
+```
+
+Triggered on:
+- Push to main
+- Pull request to main
+- Manual dispatch
+
+**Pipeline Steps**
+- Checkout repository
+- Setup Go
+- Run Dagger training
+- Verify models/model.pkl exists
+- Run Dagger inference tests
+- Upload artifact named model
+- Run ITU model validator action
+- The artifact uploaded is:
+
+```text 
+models/model.pkl
+```
+
+
+---
+
+## Running Locally
+
+### Prerequisites
+- Docker running
+- Dagger CLI installed
+- Go installed
+
+### Train the Model
+
+From the project root:
+
+```text 
+cd dagger
+go run main.go train
+```
+
+This will:
+- Pull raw data via DVC
+- Train candidate models
+- Select the best model
+- Export models/model.pkl (Logistic Regression for validator)
+
+```text 
+go run main.go test
+```
+
+This executes:
+```text 
+tests/model_inference.py
+```
+Which:
+- Loads models/model.pkl
+- Loads test data
+- Runs predictions
+- Verifies output consistency
+
+
