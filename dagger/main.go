@@ -34,7 +34,7 @@ func main() {
 
 	switch cmd {
 	case "test":
-		if err := runTests(ctx, client, source); err != nil {
+		if err := runTest(ctx, client, source); err != nil {
 			log.Fatal(err)
 		}
 	case "train":
@@ -58,11 +58,6 @@ func basePythonContainer(client *dagger.Client, source *dagger.Directory) *dagge
 	return c
 }
 
-func pullDataIfPossible(c *dagger.Container) *dagger.Container {
-	// We don’t want this to fail the entire pipeline if remote is flaky.
-	return c.WithExec([]string{"sh", "-c", "dvc pull || true"})
-}
-
 func runTrain(ctx context.Context, client *dagger.Client, source *dagger.Directory) error {
 	c := basePythonContainer(client, source)
 
@@ -79,9 +74,13 @@ func runTrain(ctx context.Context, client *dagger.Client, source *dagger.Directo
 	return err
 }
 
-func runTests(ctx context.Context, client *dagger.Client, source *dagger.Directory) error {
-	c := basePythonContainer(client, source)
-	c = pullDataIfPossible(c)
+func runTest(ctx context.Context, client *dagger.Client, source *dagger.Directory) error {
+	c := client.Container().
+		From("python:3.11-slim").
+		WithDirectory("/workspace", source).
+		WithWorkdir("/workspace").
+		WithExec([]string{"pip", "install", "--no-cache-dir", "-r", "requirements.txt"}).
+		WithExec([]string{"python", "tests/inference_test.py"})
 
 	_, err := c.Sync(ctx)
 	return err
