@@ -321,7 +321,6 @@ def train():
 
     logger.info(f"Copied Logistic Regression model to {final_model_path}")
 
-    logger.success("Training pipeline completed.")
 
 
 
