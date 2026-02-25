@@ -14,15 +14,15 @@ const (
 )
 
 func main() {
-	if len(os.Args) < 1 {
-		fmt.Println("Usage: go run main.go [train|test") // setup for predit and test as well
+	if len(os.Args) < 2 {
+		fmt.Println("Usage: go run main.go [train|test]")
 		os.Exit(2)
 	}
 
 	cmd := os.Args[1]
 	ctx := context.Background()
 
-	// Connect to Dagger engine (uses Docker Desktop under the hood)
+	// Connect to Dagger engine
 	client, err := dagger.Connect(ctx, dagger.WithLogOutput(os.Stdout))
 	if err != nil {
 		log.Fatalf("failed to connect to dagger: %v", err)
@@ -64,11 +64,11 @@ func runTrain(ctx context.Context, client *dagger.Client, source *dagger.Directo
 	// Pull data
 	c = c.WithExec([]string{"sh", "-c", "dvc pull || true"})
 
-	// Run pipeline from inside MLOps_Project so `import config` works
+	// Run pipeline from inside MLOps_Project
 	c = c.WithWorkdir("/workspace/MLOps_Project").
 		WithExec([]string{"python", "-m", "pipeline"})
 
-	// Export model from container -> host (repo root)
+	// Export model
 	model := c.File("/workspace/models/model.pkl")
 	_, err := model.Export(ctx, "../models/model.pkl")
 	return err
@@ -80,7 +80,7 @@ func runTest(ctx context.Context, client *dagger.Client, source *dagger.Director
 		WithDirectory("/workspace", source).
 		WithWorkdir("/workspace").
 		WithExec([]string{"pip", "install", "--no-cache-dir", "-r", "requirements.txt"}).
-		WithExec([]string{"python", "tests/inference_test.py"})
+		WithExec([]string{"python", "tests/model_inference.py"})
 
 	_, err := c.Sync(ctx)
 	return err
