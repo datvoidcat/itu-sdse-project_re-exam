@@ -79,7 +79,6 @@ func runTest(ctx context.Context, client *dagger.Client, source *dagger.Director
 		From("python:3.11-slim").
 		WithDirectory("/workspace", source).
 		WithWorkdir("/workspace").
-		WithExec([]string{"pip", "install", "--no-cache-dir", "-r", "requirements.txt"}).
 		WithExec([]string{"python", "tests/model_inference.py"})
 
 	_, err := c.Sync(ctx)
