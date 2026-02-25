@@ -29,7 +29,7 @@ jobs:
           go run main.go train
           cd ..
 
-      - name: Upload model artifact
+      - name: Upload model artifact 
         uses: actions/upload-artifact@v4
         with:
           name: model
