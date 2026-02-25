@@ -25,6 +25,7 @@ The pipeline identifies potential new customers based on user behavior data.
 ---
 
 # Project Structure
+```text 
 itu-sdse-project_re-exam/
 ├── .github/workflows/      # GitHub Actions CI pipeline
 ├── dagger/                 # Dagger pipeline (Go SDK)
@@ -41,7 +42,7 @@ itu-sdse-project_re-exam/
 ├── tests/                  # Inference validation script
 ├── requirements.txt
 └── README.md
-
+```
 ---
 
 # Machine Learning Models
@@ -71,22 +72,6 @@ This separation ensures:
 - The CI pipeline passes under constrained dependency environments.
 
 
----
-
-# Dagger Pipeline
-
-The pipeline is implemented in:
-```text 
-dagger/main.go
-```
-It defines:
-
-- `train` → Pull data, run pipeline, export `models/model.pkl`
-- `test` → Run inference validation script
-
-
-
----
 
 ## Github Actions Workflow
 
