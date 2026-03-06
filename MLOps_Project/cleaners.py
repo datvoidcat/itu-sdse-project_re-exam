@@ -1,3 +1,6 @@
+# Data cleaning module for the MLOps project
+# This file contains functions to clean and preprocess raw data for modeling
+
 import warnings
 from pathlib import Path
 from pprint import pprint
@@ -17,6 +20,8 @@ from loaders import load_raw_data, pull_dvc_data
 warnings.filterwarnings("ignore")
 pd.set_option("display.float_format", lambda x: "%.3f" % x)
 
+
+# Helper functions for data processing
 
 def describe_numeric_col(x):
     """
@@ -44,6 +49,8 @@ def impute_missing_values(x, method="mean"):
         x = x.fillna(x.mode()[0])
     return x
 
+
+# Main data cleaning function that performs all preprocessing steps
 
 def clean_raw_data(
     df: pd.DataFrame,
@@ -94,14 +101,14 @@ def clean_raw_data(
     logger.info("Starting full cleaning pipeline...")
     data = df.copy()
 
-    # Artifacts directory
+    # Set up directory for saving processing artifacts
     if artifacts_dir is None:
         artifacts_dir = PROCESSED_DATA_DIR / "artifacts"
     artifacts_dir.mkdir(parents=True, exist_ok=True)
     logger.info(f"Artifacts will be saved in: {artifacts_dir}")
 
     
-    # 1. Date filtering on date_part
+    # Step 1: Filter data by date range
     if not max_date:
         max_date_parsed = pd.to_datetime(datetime.datetime.now().date()).date()
     else:
@@ -134,7 +141,7 @@ def clean_raw_data(
     else:
         logger.warning("Column 'date_part' not found; skipping date filtering.")
 
-    # 2. Feature selection / dropping columns
+    # Step 2: Remove unnecessary columns
     drop_cols_1 = [
         "is_active",
         "marketing_consent",
@@ -156,7 +163,7 @@ def clean_raw_data(
             data = data.drop(existing, axis=1)
 
 
-    # 3. Data cleaning: target & IDs
+    # Step 3: Clean target and ID columns
     for col in ["lead_indicator", "lead_id", "customer_code"]:
         if col in data.columns:
             data[col].replace("", np.nan, inplace=True)
@@ -179,7 +186,7 @@ def clean_raw_data(
             logger.info(f"  {val}: {n:.3f}")
 
 
-    # 4. Cast selected columns to categorical (object)
+    # Step 4: Convert certain columns to categorical type
 
     cat_cols_force_object = [
         "lead_id",
@@ -196,7 +203,7 @@ def clean_raw_data(
             logger.info(f"Changed {col} to object type")
 
 
-    # 5. Separate cont / cat variables
+    # Step 5: Split data into continuous and categorical variables
     cont_vars = data.loc[:, (data.dtypes == "float64") | (data.dtypes == "int64")]
     cat_vars = data.loc[:, data.dtypes == "object"]
 
@@ -206,7 +213,7 @@ def clean_raw_data(
     logger.info("Categorical columns:")
     pprint(list(cat_vars.columns), indent=4)
 
-    # 6. Outliers (clip at mean ± 2*std) + summary
+    # Step 6: Handle outliers by clipping extreme values
     if not cont_vars.empty:
         logger.info("Clipping outliers at mean ± 2*std for continuous variables.")
         cont_vars = cont_vars.apply(
@@ -220,7 +227,7 @@ def clean_raw_data(
         logger.warning("No continuous variables found; skipping outlier clipping.")
 
     
-    # 7. Missing data imputation
+    # Step 7: Fill in missing values
     if not cat_vars.empty:
         cat_missing_impute = cat_vars.mode(numeric_only=False, dropna=True)
         cat_missing_impute.to_csv(artifacts_dir / "cat_missing_impute.csv", index=False)
@@ -239,7 +246,7 @@ def clean_raw_data(
         logger.info("Imputing missing values for categorical variables.")
         cat_vars = cat_vars.apply(impute_missing_values)
 
-    # 8. Data standardisation (MinMaxScaler)
+    # Step 8: Scale continuous variables to 0-1 range
     if not cont_vars.empty:
         logger.info("Fitting MinMaxScaler on continuous variables.")
         scaler = MinMaxScaler()
@@ -255,7 +262,7 @@ def clean_raw_data(
             index=cont_vars.index,
         )
     
-    # 9. Combine categorical + continuous
+    # Step 9: Combine categorical and continuous data back together
     cont_vars = cont_vars.reset_index(drop=True)
     cat_vars = cat_vars.reset_index(drop=True)
     data = pd.concat([cat_vars, cont_vars], axis=1)
@@ -264,7 +271,7 @@ def clean_raw_data(
         f"Data cleansed and combined. Rows: {len(data)}, Columns: {len(data.columns)}"
     )
 
-    # 10. Data drift artifact: column list + training_data
+    # Step 10: Save artifacts for data drift detection and training
     data_columns = list(data.columns)
     with open(artifacts_dir / "columns_drift.json", "w") as f:
         json.dump(data_columns, f)
@@ -274,8 +281,7 @@ def clean_raw_data(
     data.to_csv(training_data_path, index=False)
     logger.info(f"Saved training_data.csv to {training_data_path}")
 
-    # 11. Binning source column
-    # -----------------------------
+    # Step 11: Create a binned version of the source column
     if "source" in data.columns:
         logger.info("Creating binned source column 'bin_source'.")
         data["bin_source"] = data["source"]
@@ -293,7 +299,7 @@ def clean_raw_data(
 
         data["bin_source"] = data["bin_source"].map(mapping)
 
-    # Final gold dataset
+    # Step 12: Save the final cleaned dataset
     gold_path = artifacts_dir / "train_data_gold.csv"
     data.to_csv(gold_path, index=False)
     logger.info(f"Saved train_data_gold.csv to {gold_path}")
@@ -301,6 +307,8 @@ def clean_raw_data(
     logger.success("Full cleaning pipeline completed.")
     return data
 
+
+# Convenience function to run the full cleaning pipeline from start to finish
 
 def run_cleaning_pipeline() -> pd.DataFrame:
     """
@@ -315,6 +323,8 @@ def run_cleaning_pipeline() -> pd.DataFrame:
     df_raw = load_raw_data(raw_path)
     return clean_raw_data(df_raw)
     
+
+# Run the cleaning pipeline if this script is executed directly
 
 if __name__ == "__main__":
     # Allows: python -m itu_sdse_project.modeling.cleaners

@@ -1,3 +1,6 @@
+# Main pipeline orchestrator for the ML workflow
+# This file contains the training pipeline that loads data, processes it, trains models, and registers the best one
+
 """Main pipeline orchestrator for the ML workflow."""
 import os
 os.environ["MPLBACKEND"] = "Agg" # Prevents Tkinter from being used for plots
@@ -34,6 +37,8 @@ from loaders import load_raw_data, pull_dvc_data
 from cleaners import clean_raw_data
 
 
+# Main training function that orchestrates the entire ML pipeline
+
 def train():
     """
     Training pipeline:
@@ -48,7 +53,7 @@ def train():
     logger.info("Starting TRAINING pipeline...")
     logger.info("=" * 50)
     
-    #1 Load & Clean data
+    # Step 1: Load and clean the data
     logger.info("Step 1: Loading data...")
     pull_dvc_data()
     df = load_raw_data(RAW_DATA_DIR / "raw_data.csv")
@@ -56,7 +61,7 @@ def train():
     logger.info("Step 2: Cleaning data...")
     df_cleaned = clean_raw_data(df)
 
-    #2 Load gold dataset produced by cleaner
+    # Step 2: Load the gold dataset produced by the cleaner
     artifacts_dir = PROCESSED_DATA_DIR / "artifacts"
     gold_path = artifacts_dir / "train_data_gold.csv"
     if not gold_path.exists():
@@ -66,7 +71,7 @@ def train():
         logger.info(f"Loading gold dataset from {gold_path}")
         data = pd.read_csv(gold_path)
 
-    #3 Feature engineering / dummies
+    # Step 3: Perform feature engineering (create dummy variables)
     logger.info("Step 3: Feature engineering (dummies / types)...")
 
     #Drop columns not used for training if present
@@ -98,7 +103,7 @@ def train():
             # leave as-is (e.g., target column)
             pass
 
-    #4 Split
+    # Step 4: Split data into train and test sets
     logger.info("Step 4: Splitting train/test...")
     if "lead_indicator" not in data_prepared.columns:
         raise RuntimeError("Target column 'lead_indicator' not found in prepared data")
@@ -117,7 +122,7 @@ def train():
     y_train.to_csv(artifacts_dir / "y_train.csv", index=False)
     y_test.to_csv(artifacts_dir / "y_test.csv", index=False)
 
-    #5 Train candidate models
+    # Step 5: Train candidate models
     logger.info("Step 5: Training candidate models...")
     model_results: dict = {}
     # Keep track of which models being logged to MLflow: {model_path: {run_id, artifact_path}}
@@ -134,7 +139,7 @@ def train():
         except Exception:
             logger.warning("Failed to set MLflow experiment; continuing without MLflow experiment id")
 
-    #5A XGBoost randomized search
+    # Train XGBoost model with hyperparameter tuning
     try:
         xgb = XGBRFClassifier(random_state=42, use_label_encoder=False)
         params_xgb = {
@@ -178,7 +183,7 @@ def train():
     except Exception as exc:
         logger.error(f"XGBoost training failed: {exc}")
 
-    #5B Logistic Regression with RandomizedSearchCV + mlflow logging
+    # Train Logistic Regression model with hyperparameter tuning
     try:
         if MLFLOW_AVAILABLE:
             try:
@@ -241,7 +246,7 @@ def train():
     except Exception as exc:
         logger.error(f"Logistic regression training failed: {exc}")
 
-    #6 Save results & select best model
+    # Step 6: Save results and select the best model
     logger.info("Step 6: Saving model results and selecting best model...")
     results_path = artifacts_dir / "model_results.json"
     with open(results_path, "w+") as f:
@@ -308,7 +313,7 @@ def train():
 
     logger.success("Training pipeline completed.")
 
-    # Copy Logistic Regression model to models/model.pkl for validator
+    # Copy the Logistic Regression model to the models directory for the validator
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
     final_model_path = MODELS_DIR / "model.pkl"
 
@@ -323,6 +328,8 @@ def train():
 
 
 
+
+# Run the training pipeline if this script is executed directly
 
 if __name__ == "__main__":
     train()

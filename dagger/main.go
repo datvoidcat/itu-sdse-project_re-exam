@@ -1,3 +1,6 @@
+// Dagger pipeline for MLOps project
+// This program uses Dagger to run ML training and testing in containers
+
 package main
 
 import (
@@ -22,17 +25,17 @@ func main() {
 	cmd := os.Args[1]
 	ctx := context.Background()
 
-	// Connect to Dagger engine
+	// Connect to Dagger engine for running containers
 	client, err := dagger.Connect(ctx, dagger.WithLogOutput(os.Stdout))
 	if err != nil {
 		log.Fatalf("failed to connect to dagger: %v", err)
 	}
 	defer client.Close()
 
-	// Repository root is one level up from /dagger
+	// Get the repository source directory
 	source := client.Host().Directory("..")
 
-	switch cmd {
+	// Run the appropriate command based on user input
 	case "test":
 		if err := runTest(ctx, client, source); err != nil {
 			log.Fatal(err)
@@ -49,6 +52,7 @@ func main() {
 }
 
 func basePythonContainer(client *dagger.Client, source *dagger.Directory) *dagger.Container {
+	// Create a base Python container with dependencies installed
 	c := client.Container().
 		From(pythonImg).
 		WithDirectory("/workspace", source).
@@ -59,22 +63,24 @@ func basePythonContainer(client *dagger.Client, source *dagger.Directory) *dagge
 }
 
 func runTrain(ctx context.Context, client *dagger.Client, source *dagger.Directory) error {
+	// Run the training pipeline in a container
 	c := basePythonContainer(client, source)
 
-	// Pull data
+	// Pull data from DVC
 	c = c.WithExec([]string{"sh", "-c", "dvc pull || true"})
 
-	// Run pipeline from inside MLOps_Project
+	// Run the training pipeline
 	c = c.WithWorkdir("/workspace/MLOps_Project").
 		WithExec([]string{"python", "-m", "pipeline"})
 
-	// Export model
+	// Export the trained model to the host
 	model := c.File("/workspace/models/model.pkl")
 	_, err := model.Export(ctx, "../models/model.pkl")
 	return err
 }
 
 func runTest(ctx context.Context, client *dagger.Client, source *dagger.Directory) error {
+	// Run inference tests in a container
 	c := client.Container().
 		From("python:3.11-slim").
 		WithDirectory("/workspace", source).

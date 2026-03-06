@@ -1,3 +1,6 @@
+# Data loading module for the MLOps project
+# This file contains functions to load data from files and DVC storage
+
 import subprocess
 import pandas as pd
 from pathlib import Path
@@ -21,6 +24,8 @@ def load_raw_data(filepath: Path) -> pd.DataFrame:
     data = pd.read_csv(filepath)
     logger.info(f"Loaded {len(data)} rows")
     return data
+
+# Run DVC pull if this script is executed directly
 
 if __name__ == "__main__":
     pull_dvc_data()
